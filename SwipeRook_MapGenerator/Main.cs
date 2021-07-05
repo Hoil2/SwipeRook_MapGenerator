@@ -77,14 +77,13 @@ namespace SwipeRook_MapGenerator
             worker.DoWork += new DoWorkEventHandler(FindWay);
             worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(Show);
             worker.RunWorkerAsync();
-            
+            workerTimeout.Start();
         }
 
         // 최단 경로 찾기
         void FindWay(object sender, DoWorkEventArgs e)
         {
             timer = 0;
-            workerTimeout.Start();
             btnGeneration.Enabled = false;
             shortestRoute = wayFinding.FindDirection(map);
         }
