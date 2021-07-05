@@ -20,7 +20,6 @@ namespace SwipeRook_MapGenerator
         int[,] map;
         Bitmap[] pathBitmaps = null;
         Point[] shortestRoute = null;
-        int minDistance = 0;
         int _mapIndex;
         int mapIndex {
             get {
@@ -46,6 +45,7 @@ namespace SwipeRook_MapGenerator
                 catch {_mapIndex = 0;}
             }
         }
+        int timer = 0;
         public frmMain()
         {
             InitializeComponent();
@@ -77,16 +77,23 @@ namespace SwipeRook_MapGenerator
             worker.DoWork += new DoWorkEventHandler(FindWay);
             worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(Show);
             worker.RunWorkerAsync();
+            
         }
 
         // 최단 경로 찾기
         void FindWay(object sender, DoWorkEventArgs e)
         {
+            timer = 0;
+            workerTimeout.Start();
+            btnGeneration.Enabled = false;
             shortestRoute = wayFinding.FindDirection(map);
         }
 
         void Show(object sender, RunWorkerCompletedEventArgs e)
-        {
+        { 
+            workerTimeout.Stop();
+            btnGeneration.Enabled = true;
+            
             // 최단 거리 출력
             MinDistanceLabel.Visible = true;
             lblMinDistance.Visible = true;
@@ -96,6 +103,18 @@ namespace SwipeRook_MapGenerator
             // 맵 그려서 출력
             pnlMain.BackgroundImage = pathBitmaps[mapIndex];
             pnlMain.AutoScrollMinSize = pathBitmaps[mapIndex].Size;
+        }
+
+        // 길찾기 타임아웃
+        private void workerTimeout_Tick(object sender, EventArgs e)
+        {
+            timer += 1;
+            if(timer >= 10)
+            {
+                btnGeneration.Enabled = true;
+                workerTimeout.Stop();
+                MessageBox.Show("맵 생성에 실패했습니다.");
+            }
         }
 
         private void btnLeft_Click(object sender, EventArgs e)

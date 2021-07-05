@@ -29,6 +29,7 @@ namespace SwipeRook_MapGenerator
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
             this.label1 = new System.Windows.Forms.Label();
             this.txtXSize = new System.Windows.Forms.TextBox();
@@ -48,6 +49,7 @@ namespace SwipeRook_MapGenerator
             this.tsmiMapGeneration = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiAddComponent = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiEditor = new System.Windows.Forms.ToolStripMenuItem();
+            this.workerTimeout = new System.Windows.Forms.Timer(this.components);
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -234,6 +236,11 @@ namespace SwipeRook_MapGenerator
             this.tsmiEditor.Text = "Editor";
             this.tsmiEditor.Click += new System.EventHandler(this.tsmiEditor_Click);
             // 
+            // workerTimeout
+            // 
+            this.workerTimeout.Interval = 1000;
+            this.workerTimeout.Tick += new System.EventHandler(this.workerTimeout_Tick);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -256,6 +263,7 @@ namespace SwipeRook_MapGenerator
             this.Controls.Add(this.txtXSize);
             this.Controls.Add(this.label1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "SwipeRook Map Generator";
@@ -286,6 +294,7 @@ namespace SwipeRook_MapGenerator
         private System.Windows.Forms.ToolStripMenuItem tsmiMapGeneration;
         private System.Windows.Forms.ToolStripMenuItem tsmiEditor;
         private System.Windows.Forms.ToolStripMenuItem tsmiAddComponent;
+        private System.Windows.Forms.Timer workerTimeout;
     }
 }
 
