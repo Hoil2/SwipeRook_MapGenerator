@@ -49,20 +49,12 @@ namespace SwipeRook_MapGenerator
             visited[p.Y, p.X] = true;
             way.Add(p);
             List<Point> stars = new List<Point>();
-            if(way.Count >= 3 && way[2].Equals(new Point(0,0)))
-            {
-                Console.Write("경로 : ");
-                foreach (var w in way)
-                    Console.Write(w);
-                Console.WriteLine();
-            }
             // 이동경로에 별이 있었는지 확인
             if (way.Count >= 2)
             {
                 stars = GetStarPoint(map, way[way.Count - 2], way[way.Count - 1]);
                 if (stars.Count > 0)
                 {
-                    
                     RemoveStarToMap(map, stars); // 먹은 별 지우기
                     // 별을 다 먹었다면 해당 경로는 종료
                     if (GetStarNumber(map) == 0)
