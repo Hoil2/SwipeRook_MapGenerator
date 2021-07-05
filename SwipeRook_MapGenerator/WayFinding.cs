@@ -35,7 +35,6 @@ namespace SwipeRook_MapGenerator
                     if (wayList[i].Length - 1 == minDistance)
                     {
                         route = wayList[i];
-                        break;
                     }
                 }
             }
@@ -50,12 +49,20 @@ namespace SwipeRook_MapGenerator
             visited[p.Y, p.X] = true;
             way.Add(p);
             List<Point> stars = new List<Point>();
+            if(way.Count >= 3 && way[2].Equals(new Point(0,0)))
+            {
+                Console.Write("경로 : ");
+                foreach (var w in way)
+                    Console.Write(w);
+                Console.WriteLine();
+            }
             // 이동경로에 별이 있었는지 확인
             if (way.Count >= 2)
             {
                 stars = GetStarPoint(map, way[way.Count - 2], way[way.Count - 1]);
                 if (stars.Count > 0)
-                {   
+                {
+                    
                     RemoveStarToMap(map, stars); // 먹은 별 지우기
                     // 별을 다 먹었다면 해당 경로는 종료
                     if (GetStarNumber(map) == 0)
@@ -95,7 +102,7 @@ namespace SwipeRook_MapGenerator
         {
             bool[,] t_visited = (bool[,])visited.Clone();
             visited = new bool[map.GetLength(0), map.GetLength(1)]; // 방문 초기화
-            way.Remove(p); // DFS를 이동하지 않고 한번 더 호출하므로 겹치지 않게 삭제
+            way.RemoveAt(way.Count - 1); // DFS를 이동하지 않고 한번 더 호출하므로 겹치지 않게 삭제
 
             DFS_Recursion(map, p); // 방문 초기화한 상태에서 DFS 재시작
             visited = (bool[,])t_visited.Clone(); // 끝난 후 다시 불러오기
