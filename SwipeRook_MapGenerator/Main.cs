@@ -117,6 +117,7 @@ namespace SwipeRook_MapGenerator
                 btnGeneration.Enabled = true;
                 workerTimeout.Stop();
                 MessageBox.Show("맵 생성에 실패했습니다.");
+                wayFinding = new WayFinding();
             }
         }
 
@@ -167,7 +168,7 @@ namespace SwipeRook_MapGenerator
                         text += "    {";
                         for (int x = 0; x < map.GetLength(1); x++)
                         {
-                            text += x != map.GetLength(1) - 1 ? map[y, x] + ", " : map[y, x] + "},";
+                            text += x != map.GetLength(1) - 1 ? map[y, x] + "," : map[y, x] + "},";
                         }
                         text += Environment.NewLine;
                     }
