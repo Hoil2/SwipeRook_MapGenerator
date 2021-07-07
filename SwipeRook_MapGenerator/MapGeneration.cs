@@ -148,42 +148,39 @@ namespace SwipeRook_MapGenerator
         }
 
         // 실행 흐름
-        // 룩이 없는 맵을 저장
         // 진행 중 별을 먹었다면 맵에서 별 삭제
         // 최단 경로에 따라 맵에 룩을 배치
         // 비트맵에 저장
         public Bitmap[] DrawMapByPath(int[,] map, Point[] path)
         {
             Bitmap[] pathBitmaps = new Bitmap[path.Length];
-            RemoveRook(map, path[0]);
             int[,] c_map = (int[,])map.Clone();
+            
             for (int i = 0; i < path.Length; i++)
             {
                 if (i >= 1)
                 {
-                    List<Point> stars = GetStarPoint(map, path[i - 1], path[i]);
+                    List<Point> stars = GetStarPoint(c_map, path[i - 1], path[i]);
                     if (stars.Count > 0)
-                        RemoveStarToMap(map, stars);
+                        RemoveStarToMap(c_map, stars);
                 }
-                c_map = (int[,])map.Clone(); // 룩 없는 맵 가져오기
-                AddRook(c_map, path[i]);
+                MoveRook(c_map, path[i]);
                 pathBitmaps[i] = DrawMap(c_map);
             }
             return pathBitmaps;
         }
 
-        void RemoveRook(int[,] map, Point rookPoint)
-        {
-            map[rookPoint.Y, rookPoint.X] = (int)ObjectCode.blank;
-
-            /*for(int y = 0; y < map.GetLength(0); y++)
+        void MoveRook(int[,] map, Point target) {
+            // 맵의 룩 삭제
+            for(int y = 0; y < map.GetLength(0); y++)
             {
                 for(int x = 0; x < map.GetLength(1); x++)
                 {
                     if(map[y, x] == (int)ObjectCode.rook)
                         map[y, x] = (int)ObjectCode.blank;
                 }
-            }*/
+            }
+            AddRook(map, target);
         }
 
         void AddRook(int[,] map, Point rookPoint)

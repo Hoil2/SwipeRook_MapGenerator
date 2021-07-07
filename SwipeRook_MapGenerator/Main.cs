@@ -21,11 +21,14 @@ namespace SwipeRook_MapGenerator
         Bitmap[] pathBitmaps = null;
         Point[] shortestRoute = null;
         int _mapIndex;
-        int mapIndex {
-            get {
+        int mapIndex
+        {
+            get
+            {
                 return _mapIndex;
             }
-            set {
+            set
+            {
                 try
                 {
                     if (value <= 0)
@@ -42,7 +45,7 @@ namespace SwipeRook_MapGenerator
                         btnRight.Enabled = false;
                     else btnRight.Enabled = true;
                 }
-                catch {_mapIndex = 0;}
+                catch { _mapIndex = 0; }
             }
         }
         int timer = 0;
@@ -60,7 +63,8 @@ namespace SwipeRook_MapGenerator
             btnRight.Enabled = true;
             mapIndex = 0;
             // 랜덤 맵 생성, BFS로 정상적인 맵인지 확인하고 아니면 다시 만들기
-            while (true) {
+            while (true)
+            {
                 Size mapSize = new Size(int.Parse(txtXSize.Text), int.Parse(txtYSize.Text));
                 int maxValue = mapSize.Width * mapSize.Height / 2;
                 int star = txtStar.Text == "?" ? rand.Next(1, 6) : int.Parse(txtStar.Text);
@@ -89,10 +93,10 @@ namespace SwipeRook_MapGenerator
         }
 
         void Show(object sender, RunWorkerCompletedEventArgs e)
-        { 
+        {
             workerTimeout.Stop();
             btnGeneration.Enabled = true;
-            
+
             // 최단 거리 출력
             MinDistanceLabel.Visible = true;
             lblMinDistance.Visible = true;
@@ -108,7 +112,7 @@ namespace SwipeRook_MapGenerator
         private void workerTimeout_Tick(object sender, EventArgs e)
         {
             timer += 1;
-            if(timer >= 10)
+            if (timer >= 10)
             {
                 btnGeneration.Enabled = true;
                 workerTimeout.Stop();
@@ -134,6 +138,7 @@ namespace SwipeRook_MapGenerator
         {
             if (e.Button.Equals(MouseButtons.Right))
             {
+                if (map == null) return;
                 ContextMenu cm = new ContextMenu(); //메뉴에 들어갈 아이템을 만듭니다
                 MenuItem m1 = new MenuItem();
                 m1.Text = "이미지 저장";
@@ -149,12 +154,29 @@ namespace SwipeRook_MapGenerator
                         pnlMain.BackgroundImage.Save(saveFile.FileName);
                     }
                 });
-                // 또는
-                /*m1.Click += (senders, es) =>
-                {
 
-                };*/
+                MenuItem m2 = new MenuItem();
+                m2.Text = "map index 클립보드에 저장";
+                m2.Click += new EventHandler(delegate
+                {
+                    string text = "new int[" + map.GetLength(0) + "," + map.GetLength(1) + "] {";
+                    text += Environment.NewLine;
+
+                    for (int y = 0; y < map.GetLength(0); y++)
+                    {
+                        text += "    {";
+                        for (int x = 0; x < map.GetLength(1); x++)
+                        {
+                            text += x != map.GetLength(1) - 1 ? map[y, x] + ", " : map[y, x] + "},";
+                        }
+                        text += Environment.NewLine;
+                    }
+                    text += "};";
+                    Clipboard.SetText(text);
+                });
+
                 cm.MenuItems.Add(m1);
+                cm.MenuItems.Add(m2);
                 cm.Show(pnlMain, new Point(e.X, e.Y));
             }
         }
@@ -168,7 +190,7 @@ namespace SwipeRook_MapGenerator
         private void tsmiEditor_Click(object sender, EventArgs e)
         {
             Hide();
-            if(mapEditorForm == null) mapEditorForm = new frmMapEditor(this);
+            if (mapEditorForm == null) mapEditorForm = new frmMapEditor(this);
             mapEditorForm.Show();
         }
 
