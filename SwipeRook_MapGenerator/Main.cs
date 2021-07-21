@@ -17,6 +17,7 @@ namespace SwipeRook_MapGenerator
         MapGeneration mapGeneration;
         WayFinding wayFinding;
         frmMapEditor mapEditorForm = null;
+        BackgroundWorker worker;
         int[,] map;
         Bitmap[] pathBitmaps = null;
         Point[] shortestRoute = null;
@@ -37,13 +38,16 @@ namespace SwipeRook_MapGenerator
                         _mapIndex = pathBitmaps.Length - 1;
                     else _mapIndex = value;
 
-                    if (_mapIndex == 0)
-                        btnLeft.Enabled = false;
-                    else btnLeft.Enabled = true;
+                    if (pathBitmaps != null)
+                    {
+                        if (_mapIndex == 0)
+                            btnLeft.Enabled = false;
+                        else btnLeft.Enabled = true;
 
-                    if (_mapIndex == pathBitmaps.Length - 1)
-                        btnRight.Enabled = false;
-                    else btnRight.Enabled = true;
+                        if (_mapIndex == pathBitmaps.Length - 1)
+                            btnRight.Enabled = false;
+                        else btnRight.Enabled = true;
+                    }
                 }
                 catch { _mapIndex = 0; }
             }
@@ -62,6 +66,7 @@ namespace SwipeRook_MapGenerator
             btnLeft.Enabled = true;
             btnRight.Enabled = true;
             mapIndex = 0;
+            
             // 랜덤 맵 생성, BFS로 정상적인 맵인지 확인하고 아니면 다시 만들기
             while (true)
             {
@@ -77,19 +82,23 @@ namespace SwipeRook_MapGenerator
             }
 
             // 오래걸릴 수도 있으므로 스레드에서 동작
-            BackgroundWorker worker = new BackgroundWorker();
+            worker = new BackgroundWorker();
             worker.DoWork += new DoWorkEventHandler(FindWay);
             worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(Show);
             worker.RunWorkerAsync();
-            workerTimeout.Start();
+            //workerTimeout.Start();
+            btnGeneration.Enabled = false;
         }
 
         // 최단 경로 찾기
         void FindWay(object sender, DoWorkEventArgs e)
         {
             timer = 0;
-            btnGeneration.Enabled = false;
-            shortestRoute = wayFinding.FindDirection(map);
+            try
+            {
+                shortestRoute = wayFinding.FindDirection(map);
+            }
+            catch { MessageBox.Show("길찾기 실패"); }
         }
 
         void Show(object sender, RunWorkerCompletedEventArgs e)
@@ -108,6 +117,24 @@ namespace SwipeRook_MapGenerator
             pnlMain.AutoScrollMinSize = pathBitmaps[mapIndex].Size;
         }
 
+        string MapToText(int[,] map)
+        {
+            string text = "new int[" + map.GetLength(0) + "," + map.GetLength(1) + "] {";
+            text += Environment.NewLine;
+
+            for (int y = 0; y < map.GetLength(0); y++)
+            {
+                text += "    {";
+                for (int x = 0; x < map.GetLength(1); x++)
+                {
+                    text += x != map.GetLength(1) - 1 ? map[y, x] + "," : map[y, x] + "},";
+                }
+                text += Environment.NewLine;
+            }
+            text += "};";
+            return text;
+        }
+
         // 길찾기 타임아웃
         private void workerTimeout_Tick(object sender, EventArgs e)
         {
@@ -115,9 +142,9 @@ namespace SwipeRook_MapGenerator
             if (timer >= 10)
             {
                 btnGeneration.Enabled = true;
+                worker.CancelAsync();
                 workerTimeout.Stop();
-                MessageBox.Show("맵 생성에 실패했습니다.");
-                wayFinding = new WayFinding();
+                MessageBox.Show("맵 생성에 실패했습니다." + wayFinding.wayList.Count);
             }
         }
 
@@ -160,20 +187,7 @@ namespace SwipeRook_MapGenerator
                 m2.Text = "map index 클립보드에 저장";
                 m2.Click += new EventHandler(delegate
                 {
-                    string text = "new int[" + map.GetLength(0) + "," + map.GetLength(1) + "] {";
-                    text += Environment.NewLine;
-
-                    for (int y = 0; y < map.GetLength(0); y++)
-                    {
-                        text += "    {";
-                        for (int x = 0; x < map.GetLength(1); x++)
-                        {
-                            text += x != map.GetLength(1) - 1 ? map[y, x] + "," : map[y, x] + "},";
-                        }
-                        text += Environment.NewLine;
-                    }
-                    text += "};";
-                    Clipboard.SetText(text);
+                    Clipboard.SetText(MapToText(map));
                 });
 
                 cm.MenuItems.Add(m1);
