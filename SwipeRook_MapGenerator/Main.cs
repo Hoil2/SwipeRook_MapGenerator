@@ -98,7 +98,11 @@ namespace SwipeRook_MapGenerator
             {
                 shortestRoute = wayFinding.FindDirection(map);
             }
-            catch { MessageBox.Show("길찾기 실패"); }
+            catch
+            {
+                //길찾기 재시작
+                btnGeneration_Click(sender, e);
+            }
         }
 
         void Show(object sender, RunWorkerCompletedEventArgs e)

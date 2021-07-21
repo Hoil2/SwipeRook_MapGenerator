@@ -14,7 +14,7 @@ namespace SwipeRook_MapGenerator
         // 각 경로마다 반복
         // 개선점
         // 모든 경로를 구하는건 엄청난 메모리와 시간을 필요하는 것 같음
-        // DFS로 최단 경로 구해서 각각 최단경로를 합치는 방식으로 전환
+        // BFS로 최단 경로 구해서 각각 최단경로를 합치는 방식으로 전환
         // BFS는 모든 경로를 구하는 데에 적합하지 않음
         Queue<Point> queue;
         List<Point> way;
