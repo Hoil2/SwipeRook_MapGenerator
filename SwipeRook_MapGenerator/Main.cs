@@ -68,18 +68,29 @@ namespace SwipeRook_MapGenerator
             mapIndex = 0;
             
             // 랜덤 맵 생성, BFS로 정상적인 맵인지 확인하고 아니면 다시 만들기
-            while (true)
-            {
-                Size mapSize = new Size(int.Parse(txtXSize.Text), int.Parse(txtYSize.Text));
-                int maxValue = mapSize.Width * mapSize.Height / 2;
-                int star = txtStar.Text == "?" ? rand.Next(1, 6) : int.Parse(txtStar.Text);
-                int wall = txtWall.Text == "?" ? rand.Next(3, maxValue) : int.Parse(txtWall.Text);
+            //while (true)
+            //{
+            //    Size mapSize = new Size(int.Parse(txtXSize.Text), int.Parse(txtYSize.Text));
+            //    int maxValue = mapSize.Width * mapSize.Height / 2;
+            //    int star = txtStar.Text == "?" ? rand.Next(1, 6) : int.Parse(txtStar.Text);
+            //    int wall = txtWall.Text == "?" ? rand.Next(3, maxValue) : int.Parse(txtWall.Text);
 
-                map = mapGeneration.CreateMap(mapSize, star, wall);
-                // 맵이 정상적인지 확인
-                if (wayFinding.IsMapOK(map, desiredMinDistance))
-                    break;
-            }
+            //    map = mapGeneration.CreateMap(mapSize, star, wall);
+            //    // 맵이 정상적인지 확인
+            //    if (wayFinding.IsMapOK(map, desiredMinDistance))
+            //        break;
+            //}
+
+            map = new int[8, 9] {
+                {0,0,2,0,1,0,2,1,0},
+                {0,1,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0},
+                {1,0,0,0,0,0,2,0,0},
+                {0,0,0,0,0,0,1,0,0},
+                {0,0,0,0,0,1,3,0,0},
+                {0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,1,0,0,0,0},
+            };
 
             // 오래걸릴 수도 있으므로 스레드에서 동작
             worker = new BackgroundWorker();

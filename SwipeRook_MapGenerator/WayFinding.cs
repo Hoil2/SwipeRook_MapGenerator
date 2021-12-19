@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 namespace SwipeRook_MapGenerator
 {
     class WayFinding
@@ -15,11 +12,13 @@ namespace SwipeRook_MapGenerator
         // 개선점
         // 모든 경로를 구하는건 엄청난 메모리와 시간을 필요하는 것 같음
         // BFS로 최단 경로 구해서 각각 최단경로를 합치는 방식으로 전환
-        // BFS는 모든 경로를 구하는 데에 적합하지 않음
+
+        // 현재 이미 간 거리때문에 별을 못먹는 버그가 있음
+        // 부모를 이용해서 경로를 추적하는 건 겹쳐져서 오류가 발생할 수 있음
+        // ex) a의 부모가 b고 b의 부모가 a라는 모순이 발생하면 무한루프
+        // 길이 분화될 때마다 경로를 분할해주는 방식으로 수정해야 함
         Queue<Point> queue;
-        List<Point> way;
         public List<Point[]> wayList;
-        bool[,] visited;
         public int minDistance;
         int bfsCnt;
         public Point[] FindDirection(int[,] map)
@@ -28,12 +27,13 @@ namespace SwipeRook_MapGenerator
             BFS(map, new Point[] { GetRookPoint(map) });
 
             // 테스트 출력
-            //foreach (var w in wayList)
-            //{
-            //    foreach (var v in w)
-            //        Console.Write(v);
-            //    Console.WriteLine();
-            //}
+            foreach (var w in wayList)
+            {
+                foreach (var v in w)
+                    Console.Write(v);
+                Console.WriteLine();
+                Console.WriteLine();
+            }
             minDistance = wayList.Min(x => x.Length)-1;
             return wayList.Find(x => x.Length-1 == minDistance);
         }
@@ -63,19 +63,22 @@ namespace SwipeRook_MapGenerator
 
                 foreach (var pos in posList)
                 {   // 처음 가본 곳이거나 가봤지만 가야 하는 경우
-                    if (distance[pos.Y, pos.X] == -1 || distance[p.Y, p.X] == distance[pos.Y, pos.X] - 1 ) 
+                    if (distance[pos.Y, pos.X] == -1 || distance[p.Y, p.X] == distance[pos.Y, pos.X] - 1) 
                     {
                         distance[pos.Y, pos.X] = distance[p.Y, p.X] + 1;
                         parentsPoints[pos.Y, pos.X] = new List<Point>();
                         parentsPoints[pos.Y, pos.X].Add(p);
                         queue.Enqueue(pos);
-
-                        // 별을 먹을 때 bfsCnt가 저장된 카운트보다 작거나 같을 때만 먹은 별 endPoints에 추가하고 각 별에 카운트 갱신
-                        starPoints = GetTargetPoint(c_map, p, pos, (int)ObjectCode.star);
-                        if(starPoints.Count > 0)
+                    }
+                    // 별을 먹을 때 bfsCnt가 저장된 카운트보다 작거나 같을 때만 먹은 별 endPoints에 추가하고 각 별에 카운트 갱신
+                    starPoints = GetTargetPoint(c_map, p, pos, (int)ObjectCode.star);
+                    if (starPoints.Count > 0)
+                    {
+                        if (!endPoints.Contains(pos))
                         {
-                            if (!endPoints.Contains(pos))
-                                endPoints.Add(pos); // 별을 먹은 경로의 마지막 Point 저장
+                            parentsPoints[pos.Y, pos.X] = new List<Point>();
+                            parentsPoints[pos.Y, pos.X].Add(p);
+                            endPoints.Add(pos); // 별을 먹은 경로의 마지막 Point 저장
                         }
                     }
                 }
@@ -85,10 +88,11 @@ namespace SwipeRook_MapGenerator
             List<List<Point>> routes = CreateRoutesByEndPoints(route, endPoints, parentsPoints);
             foreach (var r in routes)
             {
-                //Console.WriteLine("현재 루트 개수 : " + routes.Count);
-                //foreach (var w in r)
-                    //Console.Write(w);
-                //Console.WriteLine();
+                Console.WriteLine("현재 루트 개수 : " + routes.Count);
+                foreach (var w in r)
+                    Console.Write(w);
+                Console.WriteLine();
+                Console.WriteLine();
                 c_map = (int[,])map.Clone();
                 RemoveStarByRoute(c_map, r.ToArray());
                 if (GetStarNumber(c_map) > 0)
