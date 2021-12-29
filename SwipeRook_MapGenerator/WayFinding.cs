@@ -24,6 +24,7 @@ namespace SwipeRook_MapGenerator
         public List<Point[]> completeRouteList;
         public Point[] FindDirection(int[,] map)
         {
+
             routeList = BFS(map, GetRookPoint(map));
 
             // 테스트 출력
@@ -106,10 +107,22 @@ namespace SwipeRook_MapGenerator
 
         List<Point[]> BFS(int[,] map, Point sPoint)
         {
+            //Console.WriteLine(map.GetLength(1) + "," + map.GetLength(0));
             List<Point[]> routes = new List<Point[]>();
             queue = new Queue<Point>();
             int[,] distance = new int[map.GetLength(0), map.GetLength(1)];
-            InitArrayToValue(distance, -1);
+            
+            for(int y = 0; y < distance.GetLength(0); y++)
+            {
+                for(int x = 0; x < distance.GetLength(1); x++)
+                {
+                    distance[y, x] = -1;
+                    if(map[y, x] == (int)ObjectCode.wall)
+                    {
+                        distance[y, x] = -2;
+                    }
+                }
+            }
             distance[sPoint.Y, sPoint.X] = 0; // 방문한 것을 표시
             queue.Enqueue(sPoint);
 
@@ -119,7 +132,12 @@ namespace SwipeRook_MapGenerator
 
                 // p에서 갈 수 있는 모든 경로 가져오기
                 List<Point> posList = GetPointToGo(map, start);
-
+                Console.WriteLine(start + "에서 갈 수 있는 모든 경로 가져오기");
+                foreach (var pos in posList)
+                {
+                    Console.Write(pos);
+                }
+                Console.WriteLine();
                 foreach (var end in posList)
                 {
                     // 동선이 안겹칠 때 
@@ -129,7 +147,7 @@ namespace SwipeRook_MapGenerator
                         if (GetTargetPoint(map, start, end, (int)ObjectCode.star).Count > 0)
                         {
                             // 별을 먹었다면 루트 저장
-                            routes.AddRange(GetRouteByDistance(distance, start));
+                            routes.AddRange(GetRouteByDistance(distance, end));
                         }
                         else
                         {
@@ -154,6 +172,19 @@ namespace SwipeRook_MapGenerator
                     }
                 }
             }
+
+            for(int y = 0; y < distance.GetLength(0); y++)
+            {
+                for(int x = 0; x < distance.GetLength(1); x++)
+                {
+                    string t = "";
+                    if (distance[y, x] == -1) t = " ";
+                    else t = distance[y, x].ToString();
+                    Console.Write(t + " ");
+                }
+                Console.WriteLine();
+            }
+
             return routes;
         }
 
@@ -168,6 +199,12 @@ namespace SwipeRook_MapGenerator
                 var route = routes[0];
                 // 갈 수 있는 곳 가져오기
                 List<Point> points = GetPointByDistance(distance, route[route.Count - 1]);
+                Console.WriteLine(route[route.Count - 1] + "에서 갈 수 있는 곳 가져오기");
+                foreach (var point in points)
+                {
+                    Console.Write(point);
+                }
+                Console.WriteLine();
                 if (points.Count == 1)
                 {
                     route.Add(points[0]);
@@ -189,6 +226,14 @@ namespace SwipeRook_MapGenerator
                     routes.Remove(route);
                 }
             }
+            Console.WriteLine("별 먹었을 때 루트 계산");
+            foreach(var rs in completeRoutes)
+            {
+                foreach(var r in rs)
+                    Console.Write(r);
+                Console.WriteLine();
+            }
+            Console.WriteLine();
             return completeRoutes;
         }
 
@@ -197,19 +242,20 @@ namespace SwipeRook_MapGenerator
         {
             List<Point> points = new List<Point>();
             int nowNum = distance[start.Y, start.X];
+            if (nowNum <= 0) return points;
             // 위쪽 탐색
-            for(int y = start.Y; y >= 0; y--)
+            for(int y = start.Y - 1; y >= 0; y--)
             {
-                if(distance[y, start.X] == nowNum -1)
+                if (distance[y, start.X] == nowNum - 1)
                 {
                     points.Add(new Point(start.X, y));
                     break;
                 }
-                else if(distance[y, start.X] != -1) break;
+                else if (distance[y, start.X] != -1) break;
             }
 
             // 아래쪽 탐색
-            for (int y = start.Y; y < distance.GetLength(1); y++)
+            for (int y = start.Y + 1; y < distance.GetLength(0); y++)
             {
                 if (distance[y, start.X] == nowNum - 1)
                 {
@@ -220,18 +266,18 @@ namespace SwipeRook_MapGenerator
             }
 
             // 왼쪽 탐색
-            for (int x = start.X; x >= 0; x--)
+            for (int x = start.X - 1; x >= 0; x--)
             {
                 if (distance[start.Y, x] == nowNum - 1)
                 {
                     points.Add(new Point(x, start.Y));
                     break;
                 }
-                else if (distance[start.Y, x] != -1) break;
+                else if(distance[start.Y, x] != -1) break;
             }
 
             // 오른쪽 탐색
-            for (int x = start.X; x < distance.GetLength(0); x++)
+            for (int x = start.X + 1; x < distance.GetLength(1); x++)
             {
                 if (distance[start.Y, x] == nowNum - 1)
                 {
