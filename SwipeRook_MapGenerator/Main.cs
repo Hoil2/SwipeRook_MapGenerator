@@ -112,7 +112,7 @@ namespace SwipeRook_MapGenerator
             catch
             {
                 //길찾기 재시작
-                btnGeneration_Click(sender, e);
+                //btnGeneration_Click(sender, e);
             }
         }
 
@@ -159,7 +159,7 @@ namespace SwipeRook_MapGenerator
                 btnGeneration.Enabled = true;
                 worker.CancelAsync();
                 workerTimeout.Stop();
-                MessageBox.Show("맵 생성에 실패했습니다." + wayFinding.wayList.Count);
+                MessageBox.Show("맵 생성에 실패했습니다." + wayFinding.routeList.Count);
             }
         }
 
