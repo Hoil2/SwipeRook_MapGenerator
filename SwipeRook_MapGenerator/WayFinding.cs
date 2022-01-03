@@ -6,112 +6,80 @@ namespace SwipeRook_MapGenerator
 {
     class WayFinding
     {
-        // 별을 먹은 모든 경로를 구함(DFS) ->
-        // 별을 먹었다면 먹은 별 삭제, visited 초기화하고 남은 별들을 다시 탐색 ->
-        // 각 경로마다 반복
-        // 개선점
-        // 모든 경로를 구하는건 엄청난 메모리와 시간을 필요하는 것 같음
-        // BFS로 최단 경로 구해서 각각 최단경로를 합치는 방식으로 전환
-
-        // 현재 이미 간 거리때문에 별을 못먹는 버그가 있음
-        // 부모를 이용해서 경로를 추적하는 건 겹쳐져서 오류가 발생할 수 있음
-        // ex) a의 부모가 b고 b의 부모가 a라는 모순이 발생하면 무한루프
-        // 길이 분화될 때마다 경로를 분할해주는 방식으로 수정해야 함
         Queue<Point> queue;
-        public List<Point[]> routeList;
+        public List<List<Point>> routeList;
         public int minDistance;
-        int bfsCnt;
-        public List<Point[]> completeRouteList;
+        public List<List<Point>> completeRouteList;
+
+        // 최단 경로 찾기
         public Point[] FindDirection(int[,] map)
         {
-
+            completeRouteList = new List<List<Point>>();
             routeList = BFS(map, GetRookPoint(map));
 
+            while (routeList.Count > 0) {
+                var route = routeList[0];
+                Console.WriteLine("루트 : ");
+                foreach(var r in route)
+                {
+                    Console.Write(r);
+                }
+                Console.WriteLine();
+                var t_map = RemoveStarByRoute(map, route);
+                //Console.WriteLine("removestarByRoute");
+                //Print2DArray(t_map);
+                if (GetStarNumber(t_map) == 0) {
+                    completeRouteList.Add(route);
+                    routeList.Remove(route);
+                    continue;
+                }
+
+                var bfsRoutes = BFS(t_map, route[route.Count - 1]);
+                Console.WriteLine("bfs루트 : " + route[route.Count - 1] + "시작");
+                foreach (var rs in bfsRoutes)
+                {
+                    foreach(var r in rs)
+                        Console.Write(r);
+                    Console.WriteLine();
+                }
+                PrependToBFSRoutes(route, bfsRoutes);
+
+
+                routeList.AddRange(bfsRoutes);
+                routeList.Remove(route);
+                
+            }
             // 테스트 출력
-            foreach (var w in routeList)
+            Console.WriteLine("최종 경로들");
+            foreach (var w in completeRouteList)
             {
                 foreach (var v in w)
                     Console.Write(v);
                 Console.WriteLine();
                 Console.WriteLine();
             }
-            minDistance = routeList.Min(x => x.Length)-1;
-            return routeList.Find(x => x.Length-1 == minDistance);
+            minDistance = completeRouteList.Min(x => x.Count)-1;
+            return completeRouteList.Find(x => x.Count-1 == minDistance).ToArray();
         }
-        /*void BFS(int[,] map, Point[] route)
+
+        // BFSRoutes 앞에 앞서 탐색한 route 추가
+        void PrependToBFSRoutes(List<Point> route, List<List<Point>> bfsRoutes)
         {
-            queue = new Queue<Point>();
-            List<Point> endPoints = new List<Point>();
-            List<Point> starPoints = new List<Point>();
-            int[,] distance = new int[map.GetLength(0), map.GetLength(1)];
-            Point sPoint = route[route.Length - 1];
-            InitArrayToValue(distance, -1);
-            int[,] c_map = (int[,])map.Clone();
-            int[,] starMinNum = new int[map.GetLength(0), map.GetLength(1)];
-            List<Point>[,] parentsPoints = new List<Point>[map.GetLength(0), map.GetLength(1)];
-            InitArrayToValue(starMinNum, int.MaxValue);
-            RemoveStarByRoute(c_map, route); // 지나온 별들을 삭제
-            distance[sPoint.Y, sPoint.X] = 0; // 방문한 것을 표시
-            queue.Enqueue(sPoint);
-            bfsCnt = 0;
-
-            while (queue.Count != 0)
+            route.RemoveAt(route.Count - 1);
+            foreach(var bfsRoute in bfsRoutes)
             {
-                Point p = queue.Dequeue();
-                bfsCnt++;
-                // p에서 갈 수 있는 모든 경로 가져오기
-                List<Point> posList = GetPointToGo(c_map, p);
-
-                foreach (var pos in posList)
-                {   // 처음 가본 곳이거나 가봤지만 가야 하는 경우
-                    if (distance[pos.Y, pos.X] == -1 || distance[p.Y, p.X] == distance[pos.Y, pos.X] - 1) 
-                    {
-                        distance[pos.Y, pos.X] = distance[p.Y, p.X] + 1;
-                        parentsPoints[pos.Y, pos.X] = new List<Point>();
-                        parentsPoints[pos.Y, pos.X].Add(p);
-                        queue.Enqueue(pos);
-                    }
-                    // 별을 먹을 때 bfsCnt가 저장된 카운트보다 작거나 같을 때만 먹은 별 endPoints에 추가하고 각 별에 카운트 갱신
-                    starPoints = GetTargetPoint(c_map, p, pos, (int)ObjectCode.star);
-                    if (starPoints.Count > 0)
-                    {
-                        if (!endPoints.Contains(pos))
-                        {
-                            parentsPoints[pos.Y, pos.X] = new List<Point>();
-                            parentsPoints[pos.Y, pos.X].Add(p);
-                            endPoints.Add(pos); // 별을 먹은 경로의 마지막 Point 저장
-                        }
-                    }
-                }
+                bfsRoute.InsertRange(0, route);
             }
+        }
 
-            // 먹은 마지막 Points를 바탕으로 _routes 경로 생성
-            List<List<Point>> routes = CreateRoutesByEndPoints(route, endPoints, parentsPoints);
-            foreach (var r in routes)
-            {
-                Console.WriteLine("현재 루트 개수 : " + routes.Count);
-                foreach (var w in r)
-                    Console.Write(w);
-                Console.WriteLine();
-                Console.WriteLine();
-                c_map = (int[,])map.Clone();
-                RemoveStarByRoute(c_map, r.ToArray());
-                if (GetStarNumber(c_map) > 0)
-                    BFS(map, r.ToArray());
-                else
-                {
-                    wayList.Add(r.ToArray());
-                }
-            }
-        }*/
-
-        List<Point[]> BFS(int[,] map, Point sPoint)
+        // BFS로 탐색
+        List<List<Point>> BFS(int[,] map, Point sPoint)
         {
-            //Console.WriteLine(map.GetLength(1) + "," + map.GetLength(0));
-            List<Point[]> routes = new List<Point[]>();
+            List<List<Point>> routes = new List<List<Point>>();
             queue = new Queue<Point>();
             int[,] distance = new int[map.GetLength(0), map.GetLength(1)];
-            
+
+            // 탐색을 위한 distance 배열 초기화
             for(int y = 0; y < distance.GetLength(0); y++)
             {
                 for(int x = 0; x < distance.GetLength(1); x++)
@@ -123,31 +91,28 @@ namespace SwipeRook_MapGenerator
                     }
                 }
             }
+
             distance[sPoint.Y, sPoint.X] = 0; // 방문한 것을 표시
             queue.Enqueue(sPoint);
 
             while (queue.Count != 0)
             {
                 Point start = queue.Dequeue();
-
                 // p에서 갈 수 있는 모든 경로 가져오기
                 List<Point> posList = GetPointToGo(map, start);
-                Console.WriteLine(start + "에서 갈 수 있는 모든 경로 가져오기");
-                foreach (var pos in posList)
-                {
-                    Console.Write(pos);
-                }
-                Console.WriteLine();
+                
                 foreach (var end in posList)
                 {
                     // 동선이 안겹칠 때 
                     if (distance[end.Y, end.X] == -1)
                     {
                         distance[end.Y, end.X] = distance[start.Y, start.X] + 1;
+                        // 별을 먹었다면 
                         if (GetTargetPoint(map, start, end, (int)ObjectCode.star).Count > 0)
                         {
-                            // 별을 먹었다면 루트 저장
+                            // 루트 저장
                             routes.AddRange(GetRouteByDistance(distance, end));
+                            Console.WriteLine("별 먹음");
                         }
                         else
                         {
@@ -155,16 +120,18 @@ namespace SwipeRook_MapGenerator
                         }
                     }
                     // 동선이 겹칠 때, 별이 바로 앞에 있을 때
-                    else if(distance[start.Y, start.X] == distance[end.Y, end.X])
+                    else// if(distance[end.Y, end.X] == distance[start.Y, start.X])
                     {
                         if(GetTargetPoint(map, start, end, (int)ObjectCode.star).Count > 0)
                         {
+                            //Console.WriteLine("동선 겹침, 이동 경로 :" + start + " ->" + end);
+                            
                             // 경로 가져오기
                             var t_routes = GetRouteByDistance(distance, start);
                             // 맨 뒤에 end Point 추가
                             foreach(var r in t_routes)
                             {
-                                r.Append(end);
+                                r.Add(end);
                             }
                             // 별 먹은 루트 저장
                             routes.AddRange(t_routes);
@@ -173,25 +140,23 @@ namespace SwipeRook_MapGenerator
                 }
             }
 
-            for(int y = 0; y < distance.GetLength(0); y++)
+            Console.WriteLine("BFS 경로");
+            foreach (var r in routes)
             {
-                for(int x = 0; x < distance.GetLength(1); x++)
-                {
-                    string t = "";
-                    if (distance[y, x] == -1) t = " ";
-                    else t = distance[y, x].ToString();
-                    Console.Write(t + " ");
-                }
+                foreach (var n in r)
+                    Console.Write(n);
                 Console.WriteLine();
             }
 
+            Print2DArray(distance);
+            Console.WriteLine();
             return routes;
         }
 
         // distance를 참조해서 start 위치에서 0 위치까지 경로들 구하는 함수
-        List<Point[]> GetRouteByDistance(int[,] distance, Point start)
+        List<List<Point>> GetRouteByDistance(int[,] distance, Point start)
         {
-            List<Point[]> completeRoutes = new List<Point[]>(); 
+            List<List<Point>> completeRoutes = new List<List<Point>>();
             List<List<Point>> routes = new List<List<Point>>();
             routes.Add(new List<Point>());
             routes[0].Add(start);
@@ -199,12 +164,6 @@ namespace SwipeRook_MapGenerator
                 var route = routes[0];
                 // 갈 수 있는 곳 가져오기
                 List<Point> points = GetPointByDistance(distance, route[route.Count - 1]);
-                Console.WriteLine(route[route.Count - 1] + "에서 갈 수 있는 곳 가져오기");
-                foreach (var point in points)
-                {
-                    Console.Write(point);
-                }
-                Console.WriteLine();
                 if (points.Count == 1)
                 {
                     route.Add(points[0]);
@@ -213,6 +172,7 @@ namespace SwipeRook_MapGenerator
                 {
                     for (int i = 1; i < points.Count; i++)
                     {
+                        //Console.WriteLine("루트 복제");
                         var t = route.ToList();
                         t.Add(points[i]);
                         routes.Add(t);
@@ -222,18 +182,11 @@ namespace SwipeRook_MapGenerator
                 else // 최종 목적지에 도달했을 경우
                 {
                     route.Reverse();
-                    completeRoutes.Add(route.ToArray());
+                    completeRoutes.Add(route);
                     routes.Remove(route);
                 }
             }
-            Console.WriteLine("별 먹었을 때 루트 계산");
-            foreach(var rs in completeRoutes)
-            {
-                foreach(var r in rs)
-                    Console.Write(r);
-                Console.WriteLine();
-            }
-            Console.WriteLine();
+
             return completeRoutes;
         }
 
@@ -251,7 +204,7 @@ namespace SwipeRook_MapGenerator
                     points.Add(new Point(start.X, y));
                     break;
                 }
-                else if (distance[y, start.X] != -1) break;
+                else if (distance[y, start.X] == -2) break;
             }
 
             // 아래쪽 탐색
@@ -262,7 +215,7 @@ namespace SwipeRook_MapGenerator
                     points.Add(new Point(start.X, y));
                     break;
                 }
-                else if (distance[y, start.X] != -1) break;
+                else if (distance[y, start.X] == -2) break;
             }
 
             // 왼쪽 탐색
@@ -273,7 +226,7 @@ namespace SwipeRook_MapGenerator
                     points.Add(new Point(x, start.Y));
                     break;
                 }
-                else if(distance[start.Y, x] != -1) break;
+                else if(distance[start.Y, x] == -2) break;
             }
 
             // 오른쪽 탐색
@@ -284,217 +237,27 @@ namespace SwipeRook_MapGenerator
                     points.Add(new Point(x, start.Y));
                     break;
                 }
-                else if (distance[start.Y, x] != -1) break;
+                else if (distance[start.Y, x] == -2) break;
             }
 
             return points;
         } 
-            //// DFS 시작 함수(초기화용)
-            //List<Point> DFS(int[,] map, Point sPoint)
-            //{
-            //    visited = new bool[map.GetLength(0), map.GetLength(1)];
-            //    DFS_Recursion(map, sPoint);
-            //}
-
-            //// DFS 재귀 함수
-            //void DFS_Recursion(int[,] map, Point p)
-            //{
-            //    // 현재 노드를 방문한 것으로 표시
-            //    visited[p.Y, p.X] = true;
-            //    // 방문한 노드와 인접한 모든 노드를 가져온다.
-            //    List<Point> posList = GetPointToGo(map, p);
-            //    foreach (var pos in posList)
-            //    {
-            //        // 방문하지 않은 노드면 해당 노드로 이동
-            //        if (!visited[pos.Y, pos.X])
-            //            DFS_Recursion(map, pos); // 순환 호출
-            //    }
-            //}
-
-
-            bool CheckStarMinNum(List<Point> starPoints, int[,] starMinNum, int bfsCnt)
+            
+        // 맵에서 루트에 있는 별들 삭제
+        int[,] RemoveStarByRoute(int[,] map, List<Point> route)
         {
-            foreach (var sp in starPoints)
+            int[,] t_map = (int[,])map.Clone();
+            for(int i = 0; i < route.Count-1; i++)
             {
-                if (starMinNum[sp.Y, sp.X] < bfsCnt)
-                { 
-                    return false;
-                }
-            }
-            return true;
-        }
-        void RemoveStarByRoute(int[,] map, Point[] route)
-        {
-            for(int i = 0; i < route.Length-1; i++)
-            {
-                List<Point> stars = GetTargetPoint(map, route[i], route[i+1], (int)ObjectCode.star);
+                List<Point> stars = GetTargetPoint(t_map, route[i], route[i+1], (int)ObjectCode.star);
                 foreach(var s in stars)
                 {
-                    map[s.Y, s.X] = (int)ObjectCode.blank;
+                    t_map[s.Y, s.X] = (int)ObjectCode.blank;
                 }
             }
+            return t_map;
         }
 
-        // routes : 저장되고 있는 route들
-        // endPoints : 마지막으로 별을 먹은 위치들
-        // parentsPoints : 각 지점마다 부모의 point를 저장한 리스트
-        List<List<Point>> CreateRoutesByEndPoints(Point[] routes, List<Point> endPoints, List<Point>[,] parentsPoints)
-        {
-            List<List<Point>> resultRoutes = new List<List<Point>>();
-
-            // 경로를 추적해 생성
-            foreach (var endPoint in endPoints)
-            {
-                List<Point> route = new List<Point>();
-                route.Add(endPoint);
-                resultRoutes.Add(route);
-                DFS_Recursion(resultRoutes, route, endPoint, parentsPoints);
-            }
-
-            // 기존의 경로와 추적한 경로를 합침
-            foreach (var resultRoute in resultRoutes)
-            {
-                resultRoute.Reverse();
-                resultRoute.RemoveAt(0);
-                resultRoute.InsertRange(0, routes);
-            }
-            
-            return resultRoutes;
-        }
-
-        // 부모의 경로를 따라가며 모든 경로를 저장하는 재귀함수
-        void DFS_Recursion(List<List<Point>> resultRoutes, List<Point> nowRoute, Point p, List<Point>[,] parentsPoints)
-        {
-            if (parentsPoints[p.Y, p.X] == null) return;
-            // 해당 포인트에 분기가 있다면
-            for (int i = 1; i < parentsPoints[p.Y, p.X].Count; i++)
-            {
-                List<Point> copyRoute = nowRoute.ToList();
-                copyRoute.Add(parentsPoints[p.Y, p.X][i]);
-                resultRoutes.Add(copyRoute);
-                DFS_Recursion(resultRoutes, copyRoute, parentsPoints[p.Y, p.X][i], parentsPoints);
-            }
-            nowRoute.Add(parentsPoints[p.Y, p.X][0]);
-            DFS_Recursion(resultRoutes, nowRoute, parentsPoints[p.Y, p.X][0], parentsPoints); // 순환 호출
-        }
-
-        public List<Point> GetPointToGoByDistance(int[,] map, int[,] distance, Point now)
-        {
-            List<Point> points = GetPointToGo(map, now);
-            List<Point> resultPoints = new List<Point>();
-            int value = distance[now.Y, now.X];
-            for(int i = 0; i < points.Count; i++)
-            {
-                List<Point> targetPoint = GetTargetPoint(distance, now, points[i], value - 1);
-                if (targetPoint.Count > 0) 
-                    resultPoints.Add(targetPoint[0]);
-                //if (targetPoint.Count > 1)
-                    //Console.WriteLine("2가지 경우도 있음");
-            }
-            
-            return resultPoints;
-        }
-
-        /*
-        public Point[] FindDirection(int[,] map)
-        {
-            Point[] route = null;
-            way = new List<Point>();
-            wayList = new List<Point[]>();
-            visited = new bool[map.GetLength(0), map.GetLength(1)];
-           
-            DFS_Recursion(map, GetRookPoint(map));
-            
-            try
-            {
-                minDistance = wayList.Min(x => x.Length) - 1;
-                for (int i = 0; i < wayList.Count; i++)
-                {
-                    if (wayList[i].Length - 1 == minDistance)
-                    {
-                        route = wayList[i];
-                    }
-                }
-            }
-            catch { return route; }
-            return route;
-        }
-
-        // DFS 재귀 함수
-        void DFS_Recursion(int[,] map, Point p)
-        {
-            // 현재 노드를 방문한 것으로 표시
-            visited[p.Y, p.X] = true;
-            way.Add(p);
-
-            foreach (var w in way)
-                Console.Write(w);
-            Console.WriteLine();
-            Console.WriteLine();
-            List<Point> stars = new List<Point>();
-            // 이동경로에 별이 있었는지 확인
-            if (way.Count >= 2)
-            {
-                stars = GetStarPoint(map, way[way.Count - 2], way[way.Count - 1]);
-                if (stars.Count > 0)
-                {
-                    RemoveStarToMap(map, stars); // 먹은 별 지우기
-                    // 별을 다 먹었다면 해당 경로는 종료
-                    if (GetStarNumber(map) == 0)
-                    {
-                        wayList.Add(way.ToArray());
-                        way.RemoveAt(way.Count-1);
-                        visited[p.Y, p.X] = false;
-                        AddStarToMap(map, stars);
-                        return;
-                    }
-                    // 별이 남았다면 방문 초기화하고 DFS 재시작
-                    else
-                    {
-                        InitAndDFS(map, stars, p);
-                    }
-                }
-            }
-            // 방문한 노드와 인접한 모든 노드를 가져온다.
-            List<Point> posList = GetPointToGo(map, p);
-            foreach (var pos in posList)
-            {
-                // 방문하지 않은 노드면 해당 노드로 이동
-                if (!visited[pos.Y, pos.X])
-                    DFS_Recursion(map, pos); // 순환 호출
-                else
-                {   // 방문했어도 별이 있다면 이동
-                    if(GetStarPoint(map, p, pos).Count != 0)
-                        DFS_Recursion(map, pos);
-                }
-            }
-            way.RemoveAt(way.Count - 1);
-            visited[p.Y, p.X] = false;
-            AddStarToMap(map, stars);
-        }
-
-        void InitAndDFS(int[,] map, List<Point> gettedStar, Point p)
-        {
-            bool[,] t_visited = (bool[,])visited.Clone();
-            visited = new bool[map.GetLength(0), map.GetLength(1)]; // 방문 초기화
-            way.RemoveAt(way.Count - 1); // DFS를 이동하지 않고 한번 더 호출하므로 겹치지 않게 삭제
-
-            DFS_Recursion(map, p); // 방문 초기화한 상태에서 DFS 재시작
-            visited = (bool[,])t_visited.Clone(); // 끝난 후 다시 불러오기
-            way.Add(p); // 다시 추가
-        }
-        */
-
-        void AddStarToMap(int[,] map, List<Point> stars)
-        {
-            foreach (var star in stars)
-                map[star.Y, star.X] = (int)ObjectCode.star;
-        }
-        void RemoveStarToMap(int[,] map, List<Point> stars)
-        {
-            foreach (var star in stars)
-                map[star.Y, star.X] = (int)ObjectCode.blank;
-        }
 
         // 이동경로에 특정 타겟이 있는지 확인
         public List<Point> GetTargetPoint(int[,] map, Point start, Point end, int target)
@@ -648,37 +411,34 @@ namespace SwipeRook_MapGenerator
             return new Point();
         }
 
-        // 맵이 정상적인지 확인
-        public bool IsMapOK(int[,] map, int minDistance)
-        {
-            int starNum = GetStarNumber(map);
-            int bfs_starNum = 0, bfs_distance = 0;
-            BFS_GetStarNumber(map, starNum, ref bfs_starNum, ref bfs_distance);
-            if (starNum != bfs_starNum || minDistance > bfs_distance)
-                return false;
-            else
-            {
-                this.minDistance = bfs_distance;
-                return true;
-            }
-        }
-
         // 맵에 존재하는 별의 개수를 반환
         int GetStarNumber(int[,] map)
         {
             int cnt = 0;
             for (int y = 0; y < map.GetLength(0); y++)
             {
-                for(int x = 0; x < map.GetLength(1); x++)
+                for (int x = 0; x < map.GetLength(1); x++)
                 {
-                    if(map[y, x] == (int)ObjectCode.star)
+                    if (map[y, x] == (int)ObjectCode.star)
                         cnt++;
                 }
             }
             return cnt;
         }
-        // 모든 별을 먹을 수 있는지, 최단 거리(되돌아오는 거리 미포함)가 몇인지 반환
-        void BFS_GetStarNumber(int[,] map, int maxStarNum, ref int starNum, ref int dist)
+
+        // 맵이 정상적인지 확인
+        public bool IsMapOK(int[,] map)
+        {
+            int starNum = GetStarNumber(map);
+            int bfs_starNum = BFS_GetStarNumber(map);
+            if (starNum != bfs_starNum)
+                return false;
+            else
+                return true;
+        }
+        
+        // BFS로 먹을 수 있는 별 전부 먹기
+        int BFS_GetStarNumber(int[,] map)
         {
             queue = new Queue<Point>();
             List<Point> starPoints = new List<Point>();
@@ -709,16 +469,13 @@ namespace SwipeRook_MapGenerator
                             if (!starPoints.Contains(_p))
                             {
                                 starPoints.Add(_p);
-                                starNum = starPoints.Count;
-                                dist = distance[pos.Y, pos.X];
-                                // 모든 별들을 먹었다면 탐색 중지
-                                if (starNum == maxStarNum)
-                                    return;
                             }
                         }
                     }
                 }
             }
+
+            return starPoints.Count;
         }
 
         // 2차원 배열 특정 값으로 초기화
